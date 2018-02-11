@@ -1,0 +1,9 @@
+---
+  name: CommunismForSpigot
+  version: 0.1
+  author: Andre LaFleur
+  main: com.lafleur.communism.Main
+  commands:
+    communism:
+      description: Show contribution score from each player or add a contribution chest
+      usage: /communism [chest]

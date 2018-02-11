@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+#
+# deploy_local
+#
+# Deploys the plugin locally to test
+
+spigot_dir='~/Spigot'
+mc_jar='~/Spigot/Minecraft.jar'
+
+if `cp out/artifacts/CommunismForSpigot_jar/CommunismForSpigot.jar #{spigot_dir}/plugins`
+   `cd #{spigot_dir} && screen -dmS minecraft java -Xms512M -Xmx1G -XX:MaxPermSize=128M -XX:+UseConcMarkSweepGC -jar minecraft_server.jar`
+   sleep 3
+   if `grep "BetterTeleport" #{spigot_dir}/logs/latest.log`.include?('Could not load plugins/')
+     puts 'Could not load plugin!'
+     `screen -X -S minecraft quit`
+     exit 1
+   else
+     # `java -jar #{mc_jar} &> /dev/null`
+     
+     #`screen -S minecraft -p 0 -X stuff "stop^M"`
+   end
+end
