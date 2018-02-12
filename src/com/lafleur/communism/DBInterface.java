@@ -56,12 +56,36 @@ public class DBInterface {
         preparedStatement2.executeUpdate();
     }
 
-    public void incrementContribution(String playerName, Material blockType, int amount) {
-        // TODO: This
+    public void incrementCollectedResource(String playerName, Material blockType, int amount) throws SQLException {
+        String sql = "UPDATE OR ROLLBACK " + RESOURCES_COLLECTED_TABLE_NAME + " SET " + getColumnName(blockType) + " " +
+                "= " + getColumnName(blockType) + " + " + amount + " WHERE name = ?";
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.setString(1, playerName);
+        preparedStatement.executeUpdate();
     }
 
-    public void decrementContribution(String playerName, Material blockType, int amount) {
-        // TODO: This
+    public void decrementCollectedResource(String playerName, Material blockType, int amount) throws SQLException {
+        String sql = "UPDATE OR ROLLBACK " + RESOURCES_COLLECTED_TABLE_NAME + " SET " + getColumnName(blockType) + " " +
+                "= " + getColumnName(blockType) + " - " + amount + " WHERE name = ?";
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.setString(1, playerName);
+        preparedStatement.executeUpdate();
+    }
+
+    public void incrementContribution(String playerName, Material blockType, int amount) throws SQLException {
+        String sql = "UPDATE OR ROLLBACK " + CONTRIBUTIONS_TABLE_NAME + " SET " + getColumnName(blockType) + " " +
+                "= " + getColumnName(blockType) + " + " + amount + " WHERE name = ?";
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.setString(1, playerName);
+        preparedStatement.executeUpdate();
+    }
+
+    public void decrementContribution(String playerName, Material blockType, int amount) throws SQLException {
+        String sql = "UPDATE OR ROLLBACK " + CONTRIBUTIONS_TABLE_NAME + " SET " + getColumnName(blockType) + " " +
+                "= " + getColumnName(blockType) + " - " + amount + " WHERE name = ?";
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.setString(1, playerName);
+        preparedStatement.executeUpdate();
     }
 
     public double getContributionScore(String playerName) throws SQLException {
@@ -77,6 +101,8 @@ public class DBInterface {
 
         for (int i = 2; i <= 7; i++)
             gathered += results.getInt(i);
+
+        System.out.println("Gathered: " + gathered);
 
         results.close();
         statement.close();
@@ -96,6 +122,25 @@ public class DBInterface {
         if (given == 0 && gathered == 0) // To avoid divide-by-zero error
             return 1.0;
 
-        return (double)given / (double)gathered;
+        return (double) given / (double) gathered;
+    }
+
+    private String getColumnName(Material m) {
+        switch (m) {
+            case COAL:
+                return "coal";
+            case IRON_INGOT:
+                return "iron";
+            case GOLD_INGOT:
+                return "gold";
+            case REDSTONE:
+                return "redstone";
+            case DIAMOND:
+                return "diamond";
+            case EMERALD:
+                return "emerald";
+            default:
+                return null;
+        }
     }
 }

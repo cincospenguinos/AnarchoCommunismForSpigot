@@ -6,15 +6,21 @@ import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
+import org.bukkit.block.DoubleChest;
+import org.bukkit.block.Furnace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.InventoryPickupItemEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -25,6 +31,17 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
 
+/**
+ * This is where the magic happens.
+ *
+ * HOW POINTS WORK:
+ * - Coal: 9 pieces (or one block) yields 1 point
+ * - Iron: 1 ingot yields 1 point
+ * - Gold: 1 ingot yields 2 points
+ * - Redstone: 21 pieces yields 2 points
+ * - Diamond: 1 piece yields 10 points
+ * - Emerald: 1 piece yields 20 points
+ */
 public class Communism implements CommandExecutor, Listener {
 
     private static final String COMMUNITY_CHEST_METADATA = "IS_COMMUNITY_CHEST";
@@ -99,32 +116,100 @@ public class Communism implements CommandExecutor, Listener {
             event.getPlayer().kickPlayer("A database error occurred. Try again or disable Communism plugin.");
         }
 
-        event.setJoinMessage("Welcome to the a communist server! Type \"/communism\" to see everyone's contributions.");
+        event.setJoinMessage("Welcome to Andre's Communist Server! Type \"/communism\" to see everyone's contributions.");
+    }
+
+
+    @EventHandler
+    public void onEntityPickupItemEvent(EntityPickupItemEvent event) {
+        if (event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            int amount = 0;
+
+            switch(event.getItem().getItemStack().getType()) {
+                case DIAMOND:
+                case EMERALD:
+                case COAL:
+                case REDSTONE:
+                case IRON_INGOT:
+                case GOLD_INGOT:
+                    amount = 1;
+            }
+
+            if (amount == 0)
+                return;
+
+            amount *= event.getItem().getItemStack().getAmount(); // If we pick up 3 diamonds, it should count as 30 points
+            System.out.println("AMOUNT: " + amount);
+
+            try {
+                DBInterface.getInstance().incrementCollectedResource(player.getPlayerListName(), event.getItem().getItemStack().getType(), amount);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @EventHandler
-    public void onBlockBreak(BlockBreakEvent e) {
-        Player p = e.getPlayer();
-        Block b = e.getBlock();
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+        Player player = event.getPlayer();
+        int amount = 0;
 
-        if (b.getType() == Material.CHEST || b.getType() == Material.TRAPPED_CHEST) {
-            if (b.hasMetadata(COMMUNITY_CHEST_METADATA)) {
-                p.sendMessage("Cannot break community chest");
-                e.setCancelled(true);
-                return;
-            }
+        switch(event.getItemDrop().getItemStack().getType()) {
+            case DIAMOND:
+            case EMERALD:
+            case COAL:
+            case REDSTONE:
+            case IRON_INGOT:
+            case GOLD_INGOT:
+                amount = 1;
         }
 
-        // TODO: Increment
+        if (amount == 0)
+            return;
+
+        amount *= event.getItemDrop().getItemStack().getAmount();
+        try {
+            DBInterface.getInstance().decrementCollectedResource(player.getPlayerListName(), event.getItemDrop().getItemStack().getType(), amount);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     @EventHandler
     public void onItemMove(InventoryMoveItemEvent event) {
         Inventory destination = event.getDestination();
 
-        // We only care about this event happening from the player
-        if (event.getSource().getHolder() instanceof Player) {
+        if (event.getSource().getHolder() instanceof Player && (event.getSource().getHolder() instanceof Chest ||
+                event.getSource().getHolder() instanceof DoubleChest)) {
+            // Check to see if this is a community chest
+            // TODO: This
+
+            int amount = 0;
+
+            switch(event.getItem().getType()) {
+                case DIAMOND:
+                case EMERALD:
+                case COAL:
+                case REDSTONE:
+                case IRON_INGOT:
+                case GOLD_INGOT:
+                    amount = 1;
+            }
+
+            if (amount == 0)
+                return;
+
+            amount *= event.getItem().getAmount();
+
+
             // TODO: Decrement
+        } else if (event.getDestination().getHolder() instanceof Player && event.getSource().getHolder() instanceof Furnace) {
+            // TODO: Increment
         }
     }
 }
